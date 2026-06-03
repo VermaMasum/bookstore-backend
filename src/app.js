@@ -8,6 +8,9 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// Health check
+app.get('/', (req, res) => res.json({ success: true, message: 'Bookstore API is running' }))
+
 // Public — no token needed
 app.use('/api/auth', require('./routes/auth'))
 
