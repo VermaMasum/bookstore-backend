@@ -63,7 +63,7 @@ router.put('/:id/dispatch', async (req, res, next) => {
     const orderId = parseInt(req.params.id);
     const order = await prisma.vendorOrder.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      include: { items: { include: { book: true } } },
     });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
     if (order.status !== 'PENDING') {
@@ -76,7 +76,7 @@ router.put('/:id/dispatch', async (req, res, next) => {
       if (!inv || inv.quantity < item.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for book ID ${item.bookId}`,
+          message: `Insufficient stock for "${item.book.title}"`,
         });
       }
     }

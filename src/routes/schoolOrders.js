@@ -33,31 +33,40 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/school-orders — create from set or manual items
+// POST /api/school-orders — create from multiple sets or manual items
 router.post('/', async (req, res, next) => {
   try {
-    const { schoolId, setId, notes, items, students } = req.body;
-    // If setId provided, pull items from the book set
+    const { schoolId, sets, notes, items } = req.body;
     let orderItems = items;
-    const multiplier = parseInt(students) > 0 ? parseInt(students) : 1;
 
-    if (setId && (!items || items.length === 0)) {
-      const set = await prisma.bookSet.findUnique({
-        where: { id: parseInt(setId) },
-        include: { items: { include: { book: true } } },
-      });
-      if (!set) return res.status(404).json({ success: false, message: 'Book set not found' });
-      orderItems = set.items.map((si) => ({
-        bookId: si.bookId,
-        qtyOrdered: si.quantity * multiplier,
-        unitPrice: parseFloat(si.book.mrp),
-      }));
+    if (sets && sets.length > 0) {
+      const itemMap = {};
+      for (const s of sets) {
+        const qty = Math.max(1, parseInt(s.quantity) || 1);
+        const set = await prisma.bookSet.findUnique({
+          where: { id: parseInt(s.setId) },
+          include: { items: { include: { book: true } } },
+        });
+        if (!set) return res.status(404).json({ success: false, message: 'Book set not found' });
+        for (const si of set.items) {
+          if (itemMap[si.bookId]) {
+            itemMap[si.bookId].qtyOrdered += si.quantity * qty;
+          } else {
+            itemMap[si.bookId] = {
+              bookId: si.bookId,
+              qtyOrdered: si.quantity * qty,
+              unitPrice: parseFloat(si.book.mrp),
+            };
+          }
+        }
+      }
+      orderItems = Object.values(itemMap);
     }
 
     const order = await prisma.schoolOrder.create({
       data: {
         schoolId: parseInt(schoolId),
-        setId: setId ? parseInt(setId) : null,
+        setId: null,
         notes,
         items: {
           create: orderItems.map((i) => ({
