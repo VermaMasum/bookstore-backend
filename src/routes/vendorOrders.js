@@ -1,14 +1,15 @@
 const router = require('express').Router();
 const prisma = require('../lib/prisma');
 
-// GET /api/vendor-orders
+// GET /api/company-orders
 router.get('/', async (req, res, next) => {
   try {
     const orders = await prisma.vendorOrder.findMany({
       include: {
-        vendor: true,
+        company: true,
         items: { include: { book: true } },
         payments: true,
+        invoice: { select: { id: true, invoiceNumber: true } },
       },
       orderBy: { orderDate: 'desc' },
     });
@@ -18,12 +19,12 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// GET /api/vendor-orders/:id
+// GET /api/company-orders/:id
 router.get('/:id', async (req, res, next) => {
   try {
     const order = await prisma.vendorOrder.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { vendor: true, items: { include: { book: true } }, payments: true },
+      include: { company: true, items: { include: { book: true } }, payments: true },
     });
     if (!order) return res.status(404).json({ success: false, message: 'Vendor order not found' });
     res.json({ success: true, data: order });
@@ -32,14 +33,14 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// POST /api/vendor-orders — create with items
+// POST /api/company-orders — create with items
 router.post('/', async (req, res, next) => {
   try {
-    const { vendorId, notes, items } = req.body;
+    const { companyId, notes, items } = req.body;
     // items: [{ bookId, quantity, unitPrice }]
     const order = await prisma.vendorOrder.create({
       data: {
-        vendorId: parseInt(vendorId),
+        companyId: parseInt(companyId),
         notes,
         items: {
           create: items.map((i) => ({
@@ -49,7 +50,7 @@ router.post('/', async (req, res, next) => {
           })),
         },
       },
-      include: { vendor: true, items: { include: { book: true } } },
+      include: { company: true, items: { include: { book: true } } },
     });
     res.status(201).json({ success: true, data: order });
   } catch (err) {
@@ -57,7 +58,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// PUT /api/vendor-orders/:id/dispatch — deduct from inventory
+// PUT /api/company-orders/:id/dispatch — deduct from inventory
 router.put('/:id/dispatch', async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id);
@@ -100,7 +101,7 @@ router.put('/:id/dispatch', async (req, res, next) => {
   }
 });
 
-// PUT /api/vendor-orders/:id/deliver
+// PUT /api/company-orders/:id/deliver
 router.put('/:id/deliver', async (req, res, next) => {
   try {
     const order = await prisma.vendorOrder.update({
@@ -113,7 +114,7 @@ router.put('/:id/deliver', async (req, res, next) => {
   }
 });
 
-// PUT /api/vendor-orders/:id/cancel
+// PUT /api/company-orders/:id/cancel
 router.put('/:id/cancel', async (req, res, next) => {
   try {
     const order = await prisma.vendorOrder.update({

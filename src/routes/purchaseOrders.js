@@ -6,7 +6,7 @@ router.get('/', async (req, res, next) => {
   try {
     const orders = await prisma.purchaseOrder.findMany({
       include: {
-        supplier: true,
+        company: true,
         items: { include: { book: true } },
       },
       orderBy: { orderDate: 'desc' },
@@ -22,7 +22,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const order = await prisma.purchaseOrder.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { supplier: true, items: { include: { book: true } } },
+      include: { company: true, items: { include: { book: true } } },
     });
     if (!order) return res.status(404).json({ success: false, message: 'Purchase order not found' });
     res.json({ success: true, data: order });
@@ -34,11 +34,11 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/purchase-orders — create PO with items
 router.post('/', async (req, res, next) => {
   try {
-    const { supplierId, notes, items } = req.body;
+    const { companyId, notes, items } = req.body;
     // items: [{ bookId, quantity, unitCost }]
     const order = await prisma.purchaseOrder.create({
       data: {
-        supplierId: parseInt(supplierId),
+        companyId: parseInt(companyId),
         notes,
         items: {
           create: items.map((i) => ({
@@ -48,7 +48,7 @@ router.post('/', async (req, res, next) => {
           })),
         },
       },
-      include: { supplier: true, items: { include: { book: true } } },
+      include: { company: true, items: { include: { book: true } } },
     });
     res.status(201).json({ success: true, data: order });
   } catch (err) {

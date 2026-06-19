@@ -14,12 +14,28 @@ model User {
   name             String
   email            String    @unique
   password         String
+  phone            String?
+  role             UserRole  @default(ADMIN)
   resetToken       String?
   resetTokenExpiry DateTime?
   createdAt        DateTime  @default(now())
 }
 
 // ─── MASTERS ────────────────────────────────────────────────────
+
+model Company {
+  id             Int             @id @default(autoincrement())
+  name           String
+  contact        String?
+  email          String?
+  address        String?
+  gstin          String?
+  creditLimit    Decimal?        @db.Decimal(10, 2)
+  createdAt      DateTime        @default(now())
+  purchaseOrders PurchaseOrder[]
+  vendorOrders   VendorOrder[]
+  payments       Payment[]
+}
 
 model Publisher {
   id        Int      @id @default(autoincrement())
@@ -29,29 +45,6 @@ model Publisher {
   address   String?
   createdAt DateTime @default(now())
   books     Book[]
-}
-
-model Supplier {
-  id             Int             @id @default(autoincrement())
-  name           String
-  type           SupplierType    @default(LOCAL)
-  contact        String?
-  email          String?
-  address        String?
-  createdAt      DateTime        @default(now())
-  purchaseOrders PurchaseOrder[]
-}
-
-model Vendor {
-  id           Int           @id @default(autoincrement())
-  name         String
-  contact      String?
-  email        String?
-  address      String?
-  creditLimit  Decimal?      @db.Decimal(10, 2)
-  createdAt    DateTime      @default(now())
-  vendorOrders VendorOrder[]
-  payments     Payment[]
 }
 
 model School {
@@ -75,7 +68,8 @@ model Book {
   publisherId Int
   publisher   Publisher           @relation(fields: [publisherId], references: [id])
   category    String?
-  mrp         Decimal             @db.Decimal(10, 2)
+  board       String?
+  level       String?
   costPrice   Decimal             @db.Decimal(10, 2)
   createdAt   DateTime            @default(now())
   inventory   Inventory?
@@ -95,16 +89,16 @@ model Inventory {
   lastUpdated DateTime @updatedAt
 }
 
-// ─── B2B INWARD — Purchase from Suppliers ───────────────────────
+// ─── B2B INWARD — Purchase from Companies ───────────────────────
 
 model PurchaseOrder {
-  id         Int                 @id @default(autoincrement())
-  supplierId Int
-  supplier   Supplier            @relation(fields: [supplierId], references: [id])
-  orderDate  DateTime            @default(now())
-  status     PurchaseOrderStatus @default(PENDING)
-  notes      String?
-  items      PurchaseOrderItem[]
+  id        Int                 @id @default(autoincrement())
+  companyId Int
+  company   Company             @relation(fields: [companyId], references: [id])
+  orderDate DateTime            @default(now())
+  status    PurchaseOrderStatus @default(PENDING)
+  notes     String?
+  items     PurchaseOrderItem[]
 }
 
 model PurchaseOrderItem {
@@ -117,17 +111,18 @@ model PurchaseOrderItem {
   unitCost        Decimal       @db.Decimal(10, 2)
 }
 
-// ─── B2B OUTWARD — Sell to Vendors ──────────────────────────────
+// ─── B2B OUTWARD — Sell to Companies ──────────────────────────────
 
 model VendorOrder {
   id        Int               @id @default(autoincrement())
-  vendorId  Int
-  vendor    Vendor            @relation(fields: [vendorId], references: [id])
+  companyId Int
+  company   Company           @relation(fields: [companyId], references: [id])
   orderDate DateTime          @default(now())
   status    VendorOrderStatus @default(PENDING)
   notes     String?
   items     VendorOrderItem[]
   payments  Payment[]
+  invoice   Invoice?
 }
 
 model VendorOrderItem {
@@ -149,6 +144,8 @@ model BookSet {
   school       School        @relation(fields: [schoolId], references: [id])
   className    String
   sessionYear  String
+  board        String?
+  level        String?
   totalPrice   Decimal?      @db.Decimal(10, 2)
   createdAt    DateTime      @default(now())
   items        BookSetItem[]
@@ -165,18 +162,20 @@ model BookSetItem {
 }
 
 model SchoolOrder {
-  id        Int               @id @default(autoincrement())
-  schoolId  Int
-  school    School            @relation(fields: [schoolId], references: [id])
-  setId     Int?
-  bookSet   BookSet?          @relation(fields: [setId], references: [id])
-  orderDate DateTime          @default(now())
-  status    SchoolOrderStatus @default(PENDING)
-  notes     String?
-  items     SchoolOrderItem[]
-  payments  Payment[]
-
-
+  id           Int               @id @default(autoincrement())
+  schoolId     Int
+  school       School            @relation(fields: [schoolId], references: [id])
+  setId        Int?
+  bookSet      BookSet?          @relation(fields: [setId], references: [id])
+  orderDate    DateTime          @default(now())
+  status       SchoolOrderStatus @default(PENDING)
+  notes        String?
+  childName    String?
+  guardianName String?
+  userId       Int?
+  items        SchoolOrderItem[]
+  payments     Payment[]
+  invoice      Invoice?
 }
 
 model SchoolOrderItem {
@@ -199,8 +198,8 @@ model Payment {
   vendorOrder   VendorOrder?  @relation(fields: [vendorOrderId], references: [id])
   schoolOrderId Int?
   schoolOrder   SchoolOrder?  @relation(fields: [schoolOrderId], references: [id])
-  vendorId      Int?
-  vendor        Vendor?       @relation(fields: [vendorId], references: [id])
+  companyId     Int?
+  company       Company?      @relation(fields: [companyId], references: [id])
   schoolId      Int?
   school        School?       @relation(fields: [schoolId], references: [id])
   amount        Decimal       @db.Decimal(10, 2)
@@ -223,11 +222,74 @@ model DailyReconciliation {
   createdAt      DateTime @default(now())
 }
 
+// ─── SHOP SETTINGS (singleton, id=1) ────────────────────────────
+
+model ShopSettings {
+  id            Int      @id @default(1)
+  shopName      String   @default("My Bookstore")
+  address       String   @default("")
+  city          String   @default("")
+  state         String   @default("")
+  pincode       String   @default("")
+  gstin         String   @default("")
+  phone         String   @default("")
+  email         String   @default("")
+  bankName      String   @default("")
+  accountNo     String   @default("")
+  ifscCode      String   @default("")
+  lastInvoiceNo Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── INVOICES ────────────────────────────────────────────────────
+
+model Invoice {
+  id            Int           @id @default(autoincrement())
+  invoiceNumber String        @unique
+  invoiceDate   DateTime      @default(now())
+  orderType     OrderType
+  vendorOrderId Int?          @unique
+  schoolOrderId Int?          @unique
+  vendorOrder   VendorOrder?  @relation(fields: [vendorOrderId], references: [id])
+  schoolOrder   SchoolOrder?  @relation(fields: [schoolOrderId], references: [id])
+  buyerName     String
+  buyerAddress  String        @default("")
+  buyerGstin    String        @default("")
+  buyerPhone    String        @default("")
+  buyerEmail    String        @default("")
+  subtotal      Decimal       @db.Decimal(10, 2)
+  discountTotal Decimal       @default(0) @db.Decimal(10, 2)
+  gstRate       Decimal       @default(0) @db.Decimal(5, 2)
+  supplyType    SupplyType    @default(INTRA)
+  taxAmount     Decimal       @default(0) @db.Decimal(10, 2)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  notes         String?
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id          Int     @id @default(autoincrement())
+  invoiceId   Int
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  bookTitle   String
+  bookClass   String  @default("")
+  publisher   String  @default("")
+  isbn        String  @default("")
+  hsnCode     String  @default("4901")
+  qty         Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  discountPct Decimal @default(0) @db.Decimal(5, 2)
+  amount      Decimal @db.Decimal(10, 2)
+}
+
 // ─── ENUMS ──────────────────────────────────────────────────────
 
-enum SupplierType {
-  LOCAL
-  EXTERNAL
+enum UserRole {
+  ADMIN
+  SUB_ADMIN
+  END_USER
 }
 
 enum PurchaseOrderStatus {
@@ -261,4 +323,9 @@ enum PaymentMethod {
   BANK_TRANSFER
   CHEQUE
   UPI
+}
+
+enum SupplyType {
+  INTRA
+  INTER
 }

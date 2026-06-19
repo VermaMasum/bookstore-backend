@@ -34,14 +34,13 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/book-sets — create set with items, auto-calc total price
 router.post('/', async (req, res, next) => {
   try {
-    const { name, schoolId, className, sessionYear, items } = req.body;
+    const { name, schoolId, className, sessionYear, board, level, items } = req.body;
     // items: [{ bookId, quantity }]
 
-    // Auto-calculate total price from book MRP
     let totalPrice = 0;
     for (const item of items) {
       const book = await prisma.book.findUnique({ where: { id: parseInt(item.bookId) } });
-      if (book) totalPrice += parseFloat(book.mrp) * parseInt(item.quantity);
+      if (book) totalPrice += parseFloat(book.costPrice) * parseInt(item.quantity);
     }
 
     const set = await prisma.bookSet.create({
@@ -50,6 +49,8 @@ router.post('/', async (req, res, next) => {
         schoolId: parseInt(schoolId),
         className,
         sessionYear,
+        board: board || null,
+        level: level || null,
         totalPrice,
         items: {
           create: items.map((i) => ({
@@ -70,17 +71,16 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const setId = parseInt(req.params.id);
-    const { name, className, sessionYear, items } = req.body;
+    const { name, className, sessionYear, board, level, items } = req.body;
 
     let totalPrice = 0;
     if (items) {
       for (const item of items) {
         const book = await prisma.book.findUnique({ where: { id: parseInt(item.bookId) } });
-        if (book) totalPrice += parseFloat(book.mrp) * parseInt(item.quantity);
+        if (book) totalPrice += parseFloat(book.costPrice) * parseInt(item.quantity);
       }
     }
 
-    // Replace items
     if (items) {
       await prisma.bookSetItem.deleteMany({ where: { setId } });
     }
@@ -91,6 +91,8 @@ router.put('/:id', async (req, res, next) => {
         name,
         className,
         sessionYear,
+        board: board !== undefined ? (board || null) : undefined,
+        level: level !== undefined ? (level || null) : undefined,
         totalPrice: items ? totalPrice : undefined,
         items: items
           ? {

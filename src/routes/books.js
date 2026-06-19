@@ -36,17 +36,16 @@ router.post('/bulk-import', upload.single('file'), async (req, res, next) => {
     const skipped = [];
 
     for (const row of rows) {
-      const { title, publisher_name, mrp, cost_price, isbn, author, category } = row;
+      const { title, publisher_name, cost_price, isbn, author, category, board, level } = row;
 
-      if (!title || !publisher_name || !mrp || !cost_price) {
+      if (!title || !publisher_name || !cost_price) {
         skipped.push({ row: title || '(untitled)', reason: 'Missing required fields' });
         continue;
       }
 
-      const parsedMrp = parseFloat(mrp);
       const parsedCost = parseFloat(cost_price);
-      if (isNaN(parsedMrp) || isNaN(parsedCost)) {
-        skipped.push({ row: title, reason: 'Invalid MRP or cost_price' });
+      if (isNaN(parsedCost)) {
+        skipped.push({ row: title, reason: 'Invalid cost_price' });
         continue;
       }
 
@@ -67,7 +66,8 @@ router.post('/bulk-import', upload.single('file'), async (req, res, next) => {
             isbn: isbn || null,
             author: author || null,
             category: category || null,
-            mrp: parsedMrp,
+            board: board || null,
+            level: level || null,
             costPrice: parsedCost,
             publisherId: publisher.id,
             inventory: { create: { quantity: 0 } },
@@ -102,7 +102,7 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/books
 router.post('/', async (req, res, next) => {
   try {
-    const { title, isbn, author, publisherId, category, mrp, costPrice } = req.body;
+    const { title, isbn, author, publisherId, category, board, level, costPrice } = req.body;
     const book = await prisma.book.create({
       data: {
         title,
@@ -110,7 +110,8 @@ router.post('/', async (req, res, next) => {
         author,
         publisherId: parseInt(publisherId),
         category,
-        mrp: parseFloat(mrp),
+        board: board || null,
+        level: level || null,
         costPrice: parseFloat(costPrice),
         inventory: { create: { quantity: 0 } },
       },
@@ -125,7 +126,7 @@ router.post('/', async (req, res, next) => {
 // PUT /api/books/:id
 router.put('/:id', async (req, res, next) => {
   try {
-    const { title, isbn, author, publisherId, category, mrp, costPrice } = req.body;
+    const { title, isbn, author, publisherId, category, board, level, costPrice } = req.body;
     const book = await prisma.book.update({
       where: { id: parseInt(req.params.id) },
       data: {
@@ -134,7 +135,8 @@ router.put('/:id', async (req, res, next) => {
         author,
         publisherId: publisherId ? parseInt(publisherId) : undefined,
         category,
-        mrp: mrp ? parseFloat(mrp) : undefined,
+        board: board !== undefined ? (board || null) : undefined,
+        level: level !== undefined ? (level || null) : undefined,
         costPrice: costPrice ? parseFloat(costPrice) : undefined,
       },
       include: { publisher: true, inventory: true },

@@ -43,14 +43,14 @@ router.get('/school-order/:orderId', async (req, res, next) => {
 // POST /api/payments — record a payment
 router.post('/', async (req, res, next) => {
   try {
-    const { orderType, vendorOrderId, schoolOrderId, vendorId, schoolId, amount, method, notes, paymentDate } =
+    const { orderType, vendorOrderId, schoolOrderId, companyId, schoolId, amount, method, notes, paymentDate } =
       req.body;
     const payment = await prisma.payment.create({
       data: {
         orderType,
         vendorOrderId: vendorOrderId ? parseInt(vendorOrderId) : null,
         schoolOrderId: schoolOrderId ? parseInt(schoolOrderId) : null,
-        vendorId: vendorId ? parseInt(vendorId) : null,
+        companyId: companyId ? parseInt(companyId) : null,
         schoolId: schoolId ? parseInt(schoolId) : null,
         amount: parseFloat(amount),
         method: method || 'CASH',

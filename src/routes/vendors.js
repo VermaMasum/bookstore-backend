@@ -1,75 +1,53 @@
 const router = require('express').Router();
 const prisma = require('../lib/prisma');
 
+const WHERE = { type: { in: ['VENDOR', 'BOTH'] } };
+
 router.get('/', async (req, res, next) => {
   try {
-    const vendors = await prisma.vendor.findMany({ orderBy: { name: 'asc' } });
-    res.json({ success: true, data: vendors });
-  } catch (err) {
-    next(err);
-  }
+    const data = await prisma.company.findMany({ where: WHERE, orderBy: { name: 'asc' } });
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
 });
 
 router.get('/:id', async (req, res, next) => {
   try {
-    const vendor = await prisma.vendor.findUnique({
+    const data = await prisma.company.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: {
-        vendorOrders: { include: { items: { include: { book: true } } } },
-        payments: true,
-      },
+      include: { vendorOrders: { include: { items: { include: { book: true } } } }, payments: true },
     });
-    if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
-    res.json({ success: true, data: vendor });
-  } catch (err) {
-    next(err);
-  }
+    if (!data || !['VENDOR', 'BOTH'].includes(data.type))
+      return res.status(404).json({ success: false, message: 'Vendor not found' });
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
 });
 
 router.post('/', async (req, res, next) => {
   try {
-    const { name, contact, email, address, creditLimit } = req.body;
-    const vendor = await prisma.vendor.create({
-      data: {
-        name,
-        contact,
-        email,
-        address,
-        creditLimit: creditLimit ? parseFloat(creditLimit) : null,
-      },
+    const { name, contact, email, address, gstin, creditLimit } = req.body;
+    const data = await prisma.company.create({
+      data: { name, type: 'VENDOR', contact: contact || null, email: email || null, address: address || null, gstin: gstin || null, creditLimit: creditLimit ? parseFloat(creditLimit) : null },
     });
-    res.status(201).json({ success: true, data: vendor });
-  } catch (err) {
-    next(err);
-  }
+    res.status(201).json({ success: true, data });
+  } catch (err) { next(err); }
 });
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const { name, contact, email, address, creditLimit } = req.body;
-    const vendor = await prisma.vendor.update({
+    const { name, contact, email, address, gstin, creditLimit } = req.body;
+    const data = await prisma.company.update({
       where: { id: parseInt(req.params.id) },
-      data: {
-        name,
-        contact,
-        email,
-        address,
-        creditLimit: creditLimit !== undefined ? parseFloat(creditLimit) : undefined,
-      },
+      data: { name, contact: contact || null, email: email || null, address: address || null, gstin: gstin || null, creditLimit: creditLimit !== undefined ? parseFloat(creditLimit) : undefined },
     });
-    res.json({ success: true, data: vendor });
-  } catch (err) {
-    next(err);
-  }
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
 });
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    await prisma.vendor.delete({ where: { id: parseInt(req.params.id) } });
+    await prisma.company.delete({ where: { id: parseInt(req.params.id) } });
     res.json({ success: true, message: 'Vendor deleted' });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

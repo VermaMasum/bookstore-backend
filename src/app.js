@@ -12,15 +12,15 @@ app.use(express.json())
 app.get('/', (req, res) => res.json({ success: true, message: 'Bookstore API is running' }))
 
 // Public — no token needed
-app.use('/api/auth', require('./routes/auth'))
+app.use('/api/auth',   require('./routes/auth'))
+app.use('/api/portal', require('./routes/portal'))
 
 // Protected — all routes below require valid JWT
 app.use(auth)
 
 app.use('/api/books',           require('./routes/books'))
 app.use('/api/publishers',      require('./routes/publishers'))
-app.use('/api/suppliers',       require('./routes/suppliers'))
-app.use('/api/vendors',         require('./routes/vendors'))
+app.use('/api/companies',       require('./routes/companies'))
 app.use('/api/schools',         require('./routes/schools'))
 app.use('/api/inventory',       require('./routes/inventory'))
 app.use('/api/purchase-orders', require('./routes/purchaseOrders'))
@@ -29,6 +29,9 @@ app.use('/api/book-sets',       require('./routes/bookSets'))
 app.use('/api/school-orders',   require('./routes/schoolOrders'))
 app.use('/api/payments',        require('./routes/payments'))
 app.use('/api/reconciliation',  require('./routes/reconciliation'))
+app.use('/api/invoices',        require('./routes/invoices'))
+app.use('/api/shop-settings',   require('./routes/shopSettings'))
+app.use('/api/eod-upload',      require('./routes/eodUpload'))
 
 app.use(require('./middleware/errorHandler'))
 
