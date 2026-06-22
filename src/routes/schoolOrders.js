@@ -66,7 +66,7 @@ router.post("/", async (req, res, next) => {
             itemMap[si.bookId] = {
               bookId: si.bookId,
               qtyOrdered: si.quantity * qty,
-              unitPrice: parseFloat(si.book.mrp),
+              unitPrice: parseFloat(si.book.costPrice),
             };
           }
         }

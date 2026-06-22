@@ -103,7 +103,6 @@ router.post("/bulk-import", upload.single("file"), async (req, res, next) => {
         category: r.category,
         board: r.board,
         level: r.level,
-        mrp: r.cost_price,
         costPrice: r.cost_price,
         publisherId: publisherMap.get(r.publisher_name.toLowerCase()),
       })),
