@@ -12,6 +12,8 @@ model User {
   name             String
   email            String    @unique
   password         String
+  phone            String?
+  role             String    @default("ADMIN")
   resetToken       String?
   resetTokenExpiry DateTime?
   createdAt        DateTime  @default(now())
@@ -148,17 +150,20 @@ model BookSetItem {
 }
 
 model SchoolOrder {
-  id        Int               @id @default(autoincrement())
-  schoolId  Int
-  setId     Int?
-  orderDate DateTime          @default(now())
-  status    SchoolOrderStatus @default(PENDING)
-  notes     String?
-  payments  Payment[]
-  school    School            @relation(fields: [schoolId], references: [id])
-  bookSet   BookSet?          @relation(fields: [setId], references: [id])
-  items     SchoolOrderItem[]
-  invoice   Invoice?
+  id            Int               @id @default(autoincrement())
+  schoolId      Int
+  setId         Int?
+  userId        Int?
+  orderDate     DateTime          @default(now())
+  status        SchoolOrderStatus @default(PENDING)
+  childName     String?
+  guardianName  String?
+  notes         String?
+  payments      Payment[]
+  school        School            @relation(fields: [schoolId], references: [id])
+  bookSet       BookSet?          @relation(fields: [setId], references: [id])
+  items         SchoolOrderItem[]
+  invoice       Invoice?
 }
 
 model SchoolOrderItem {
