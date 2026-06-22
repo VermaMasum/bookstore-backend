@@ -10,6 +10,7 @@ router.get("/", async (req, res, next) => {
         bookSet: true,
         items: { include: { book: true } },
         payments: true,
+        invoice: true,
       },
       orderBy: { orderDate: "desc" },
     });
