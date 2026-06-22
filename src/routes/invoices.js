@@ -78,7 +78,7 @@ router.post('/generate', async (req, res, next) => {
           vendorOrder: { connect: { id: order.id } },
           buyerName: order.company.name,
           buyerAddress: buyerAddressOverride !== undefined ? buyerAddressOverride : (order.company.address || ''),
-          buyerGstin: order.company.gstin || '',
+          buyerGstin: '',
           buyerPhone: order.company.contact || '',
           buyerEmail: order.company.email || '',
           subtotal: Math.round(subtotal * 100) / 100,
