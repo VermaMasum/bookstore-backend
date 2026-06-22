@@ -13,7 +13,7 @@ router.get("/", async (req, res, next) => {
         publisher: true,
         inventory: true,
       },
-      orderBy: { title: "asc" },
+      orderBy: { createdAt: "desc" },
     });
     res.json({ success: true, data: books });
   } catch (err) {

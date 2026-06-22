@@ -64,7 +64,6 @@ model Book {
   category    String?
   board       String?
   level       String?
-  mrp         Decimal             @db.Decimal(10, 2)
   costPrice   Decimal             @db.Decimal(10, 2)
   createdAt   DateTime            @default(now())
   publisher   Publisher           @relation(fields: [publisherId], references: [id])
